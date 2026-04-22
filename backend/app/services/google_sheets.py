@@ -4,6 +4,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 import google.auth
+from google.oauth2.service_account import Credentials as ServiceAccountCredentials
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import Resource, build
 from googleapiclient.errors import HttpError
@@ -14,7 +15,10 @@ settings = get_settings()
 
 
 class GoogleSheetsService:
-    """Service for interacting with Google Sheets API."""
+    """Service for interacting with Google Sheets API using Service Account.
+    
+    No billing required - service accounts have free quota for Sheet reading.
+    """
 
     def __init__(self, credentials: Optional[Credentials] = None):
         self._credentials = credentials
@@ -26,9 +30,24 @@ class GoogleSheetsService:
         """Get or create Sheets service."""
         if self._service is None:
             if self._credentials is None:
-                self._credentials, _ = google.auth.default()
+                # Use service account for free Sheet access
+                # Share the sheet with the service account email
+                creds = ServiceAccountCredentials.from_service_account_file(
+                    "service-account.json",
+                    scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
+                )
+                self._credentials = creds
             self._service = build("sheets", "v4", credentials=self._credentials)
         return self._service
+
+    @classmethod
+    def from_service_account_json(cls, json_path: str = "service-account.json") -> "GoogleSheetsService":
+        """Create service from service account JSON file."""
+        creds = ServiceAccountCredentials.from_service_account_file(
+            json_path,
+            scopes=["https://www.googleapis.com/auth/spreadsheets"],
+        )
+        return cls(credentials=creds)
 
     def set_spreadsheet_id(self, spreadsheet_id: str) -> None:
         """Set the Google Sheets spreadsheet ID."""
