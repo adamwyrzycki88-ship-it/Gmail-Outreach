@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     sender_us_role: str = Field(default="part-time", alias="SENDER_US_ROLE")
     sender_role_focus: str = Field(default="client communication for one or two hours per day", alias="SENDER_ROLE_FOCUS")
 
+    # Gmail OAuth (global for all accounts - used for token refresh)
+    gmail_client_id: str = Field(default="", alias="GOOGLE_CLIENT_ID")
+    gmail_client_secret: str = Field(default="", alias="GOOGLE_CLIENT_SECRET")
+
     # Backend
     backend_url: str = Field(default="http://localhost:8000", alias="BACKEND_URL")
     frontend_url: str = Field(default="http://localhost:3000", alias="FRONTEND_URL")

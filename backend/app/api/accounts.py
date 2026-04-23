@@ -6,9 +6,11 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.core.config import get_settings
 from app.core.database import db
 from app.services.gmail import gmail_manager
 
+settings = get_settings()
 router = APIRouter(prefix="/accounts", tags=["accounts"])
 
 
@@ -17,13 +19,6 @@ class AddAccountRequest(BaseModel):
     email: str
     access_token: str
     refresh_token: str
-    token_uri: str = "https://oauth2.googleapis.com/token"
-    expiry: str = ""
-
-
-class UpdateAccountRequest(BaseModel):
-    """Request model for updating an account."""
-    status: str = "active"
 
 
 @router.get("")
@@ -56,12 +51,19 @@ async def add_account(request: AddAccountRequest) -> Dict[str, Any]:
         if acc.get("email") == request.email:
             raise HTTPException(status_code=400, detail="Account already exists")
 
-    # Build OAuth credentials
+    # Check global Gmail client config is set
+    if not settings.gmail_client_id or not settings.gmail_client_secret:
+        raise HTTPException(
+            status_code=400,
+            detail="GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET must be set in environment"
+        )
+
+    # Build OAuth credentials with global client config
     oauth_credentials = {
         "access_token": request.access_token,
         "refresh_token": request.refresh_token,
-        "token_uri": request.token_uri,
-        "expiry": request.expiry,
+        "client_id": settings.gmail_client_id,
+        "client_secret": settings.gmail_client_secret,
     }
 
     # Add to database
