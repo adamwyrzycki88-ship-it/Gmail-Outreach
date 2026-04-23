@@ -19,6 +19,8 @@ class AddAccountRequest(BaseModel):
     email: str
     access_token: str
     refresh_token: str
+    client_id: str
+    client_secret: str
 
 
 @router.get("")
@@ -51,19 +53,16 @@ async def add_account(request: AddAccountRequest) -> Dict[str, Any]:
         if acc.get("email") == request.email:
             raise HTTPException(status_code=400, detail="Account already exists")
 
-    # Check global Gmail client config is set
-    if not settings.gmail_client_id or not settings.gmail_client_secret:
-        raise HTTPException(
-            status_code=400,
-            detail="GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET must be set in environment"
-        )
+    # Validate OAuth fields
+    if not all([request.client_id, request.client_secret, request.refresh_token]):
+        raise HTTPException(status_code=400, detail="Missing OAuth credentials")
 
-    # Build OAuth credentials with global client config
+    # Build OAuth credentials - store per-account
     oauth_credentials = {
         "access_token": request.access_token,
         "refresh_token": request.refresh_token,
-        "client_id": settings.gmail_client_id,
-        "client_secret": settings.gmail_client_secret,
+        "client_id": request.client_id,
+        "client_secret": request.client_secret,
     }
 
     # Add to database

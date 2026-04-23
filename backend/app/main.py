@@ -29,10 +29,6 @@ async def lifespan(app: FastAPI):
         # Load Gmail accounts into manager
         accounts_list = db.get_gmail_accounts()
         
-        # Load each account with OAuth credentials
-        from app.core.config import get_settings
-        cfg = get_settings()
-        
         for account in accounts_list:
             account_id = str(account.get("id", ""))
             email = account.get("email", "")
@@ -41,12 +37,6 @@ async def lifespan(app: FastAPI):
             if isinstance(oauth_creds, str):
                 import json
                 oauth_creds = json.loads(oauth_creds)
-            
-            # Add global client config if not present
-            if "client_id" not in oauth_creds:
-                oauth_creds["client_id"] = cfg.gmail_client_id
-            if "client_secret" not in oauth_creds:
-                oauth_creds["client_secret"] = cfg.gmail_client_secret
             
             gmail_manager.add_account(account_id, email, oauth_creds)
         
